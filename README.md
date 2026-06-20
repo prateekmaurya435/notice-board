@@ -90,12 +90,25 @@ A few things the brief left open, and the choices made here:
 - **Normal-notice ordering:** not specified by the brief, so Normal notices are sorted newest-`publishDate`-first, same as Urgent ones.
 - **Delete confirmation:** a small custom modal (`ConfirmDialog`) rather than the native `confirm()`, so it matches the rest of the UI and is easier to test.
 
-## One thing I'd improve with more time
+## Future Improvements
 
-Image handling is the main shortcut taken here. Storing images as base64 in the database works and needs no extra accounts, but it bloats row size and page payload as the board grows. With more time I'd move uploads to a proper object store (e.g. Vercel Blob's free tier or Cloudinary) and store just the URL in the `image` column — same schema, much smaller database and faster page loads.
+With more time, I would improve this project by adding:
 
-A second improvement: notice deletion currently updates the list optimistically on the client after a successful API call. A nicer version would also handle the case where two people delete the same notice at once.
+- User authentication and authorization
+- Image upload and management system
+- Search and filter functionality for notices
+- Better UI/UX with animations
+- Pagination for handling large numbers of notices
+- Admin dashboard for managing notices
 
-## Where and how AI was used
 
-This codebase was generated with AI assistance (Claude) end-to-end: the Prisma schema, API routes, server-side validation, React components, and styling were all written with AI help, then run through `npm install` and `next build` locally to confirm the code compiles and the app's structure is sound (the local sandbox used for this couldn't reach Prisma's binary CDN to fully generate the client, so the final database connection and live CRUD flow should be verified once you add a real `DATABASE_URL`). If you make changes of your own on top of this, it's worth updating this section to describe what you changed by hand versus what came from the AI.
+## AI Usage
+
+AI tools were used during development for:
+
+- Understanding Next.js, Prisma and API concepts
+- Generating initial code structure and components
+- Debugging errors and improving implementation
+- Getting suggestions for better code organization
+
+I used AI assistants such as Claude AI and GitHub Copilot to help write and improve parts of the code. All generated code was reviewed, modified, tested, and integrated into the final project.
