@@ -1,6 +1,7 @@
 import { prisma } from "../../../lib/prisma";
 import { validateNotice } from "../../../lib/validateNotice";
 
+// MongoDB ObjectIds are 24-character hex strings.
 const OBJECT_ID_REGEX = /^[0-9a-fA-F]{24}$/;
 
 export default async function handler(req, res) {

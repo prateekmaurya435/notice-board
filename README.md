@@ -1,36 +1,101 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Notice Board
 
-## Getting Started
+A small CRUD app for posting and managing notices, built for the Reno Platforms web development internship assignment.
 
-First, run the development server:
+- **Framework:** Next.js (Pages Router)
+- **Database access:** Prisma
+- **Database:** MongoDB Atlas (free M0 tier)
+- **Styling:** Tailwind CSS
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Features
+
+- List all notices as responsive cards, with Urgent notices always sorted above Normal ones (sorted in the database via Prisma `orderBy`, not in the browser).
+- One shared form for creating and editing a notice, including an optional image.
+- Create / update / delete go through API routes under `pages/api/notices`, with proper HTTP methods and status codes.
+- Server-side validation on every write (required fields, valid category/priority, valid date), independent of the browser-side checks.
+- Delete requires an explicit confirmation step.
+
+## Running locally
+
+1. **Install dependencies**
+
+   ```bash
+   npm install
+   ```
+
+2. **Set up a database**
+
+   Create a free [MongoDB Atlas](https://www.mongodb.com/cloud/atlas/register) cluster (the free **M0** tier is enough):
+   - Create a cluster → Database Access: add a DB user with a password → Network Access: allow access from anywhere (`0.0.0.0/0`), since Vercel's IPs aren't fixed.
+   - Click **Connect → Drivers**, copy the connection string, and add your database name before the `?`.
+
+3. **Configure the environment**
+
+   Copy `.env.example` to `.env` and paste in your connection string:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+4. **Create the collection / sync the schema**
+
+   MongoDB doesn't use Prisma Migrate (that's a SQL-only feature) — instead, push the schema directly:
+
+   ```bash
+   npx prisma db push
+   ```
+
+5. **Run the dev server**
+
+   ```bash
+   npm run dev
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000).
+
+## Deploying
+
+1. Push this repo to a public GitHub repository.
+2. Import it on [Vercel](https://vercel.com) (free Hobby tier).
+3. Add the `DATABASE_URL` environment variable in the Vercel project settings.
+4. Deploy. Vercel runs `prisma generate` automatically via the `postinstall` script in `package.json`.
+
+## Project structure
+
+```
+pages/
+  index.js                 # Notices list (server-rendered, urgent-first)
+  notices/new.js            # Create notice
+  notices/[id]/edit.js      # Edit notice (pre-filled)
+  api/notices/index.js      # GET (list) / POST (create)
+  api/notices/[id].js       # GET / PUT / DELETE one notice
+lib/
+  prisma.js                 # Prisma client singleton
+  validateNotice.js         # Shared server-side validation
+components/
+  NoticeCard.js
+  NoticeForm.js
+  ConfirmDialog.js
+prisma/
+  schema.prisma
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Design notes / decisions
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+A few things the brief left open, and the choices made here:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Image storage:** rather than wiring up a third-party file host, the optional image is read in the browser, converted to a base64 data URL, validated and size-capped (~3MB) on the server, and stored directly in the `image` field. This keeps the stack to exactly what's required (Next.js + Prisma + hosted DB) with no extra paid or free third-party services to configure.
+- **Urgent-first ordering:** MongoDB stores Prisma enums as plain strings and has no concept of enum ordinals, so `orderBy: [{ priority: "desc" }, { publishDate: "desc" }]` sorts `priority` lexicographically. That still gives the right result here, since `"Urgent"` comes after `"Normal"` alphabetically — so `desc` reliably puts every Urgent notice above every Normal one, then sorts each group by date, all inside the Prisma query.
+- **Ids:** MongoDB's primary key is an `ObjectId` (a 24-character hex string), not an auto-incrementing integer, so the `id` field and the API routes that read `req.query.id` work with strings rather than numbers.
+- **Normal-notice ordering:** not specified by the brief, so Normal notices are sorted newest-`publishDate`-first, same as Urgent ones.
+- **Delete confirmation:** a small custom modal (`ConfirmDialog`) rather than the native `confirm()`, so it matches the rest of the UI and is easier to test.
 
-## Learn More
+## One thing I'd improve with more time
 
-To learn more about Next.js, take a look at the following resources:
+Image handling is the main shortcut taken here. Storing images as base64 in the database works and needs no extra accounts, but it bloats row size and page payload as the board grows. With more time I'd move uploads to a proper object store (e.g. Vercel Blob's free tier or Cloudinary) and store just the URL in the `image` column — same schema, much smaller database and faster page loads.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+A second improvement: notice deletion currently updates the list optimistically on the client after a successful API call. A nicer version would also handle the case where two people delete the same notice at once.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Where and how AI was used
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This codebase was generated with AI assistance (Claude) end-to-end: the Prisma schema, API routes, server-side validation, React components, and styling were all written with AI help, then run through `npm install` and `next build` locally to confirm the code compiles and the app's structure is sound (the local sandbox used for this couldn't reach Prisma's binary CDN to fully generate the client, so the final database connection and live CRUD flow should be verified once you add a real `DATABASE_URL`). If you make changes of your own on top of this, it's worth updating this section to describe what you changed by hand versus what came from the AI.
