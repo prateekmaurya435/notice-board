@@ -1,0 +1,44 @@
+// Prisma schema for the Notice Board assignment.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Category {
+  Exam
+  Event
+  General
+}
+
+// NOTE: MongoDB has no native enum/ordinal type — Prisma stores enum values
+// as plain strings and orderBy on them sorts lexicographically. That still
+// gives the result we want here: "Urgent" > "Normal" alphabetically, so
+// orderBy priority: "desc" (used in the API route) correctly pushes every
+// Urgent notice above every Normal one, regardless of date.
+enum Priority {
+  Normal
+  Urgent
+}
+
+model Notice {
+  // MongoDB's primary key is an ObjectId, not an auto-incrementing int.
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  body        String
+  category    Category @default(General)
+  priority    Priority @default(Normal)
+  publishDate DateTime
+  
+  // Optional image, stored as a base64 data URL string so no third-party
+  // comfortably fits a single compressed image (we cap uploads at ~3MB).
+  image       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([priority, publishDate])
+}
