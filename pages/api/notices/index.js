@@ -15,10 +15,7 @@ export default async function handler(req, res) {
 
 async function handleList(req, res) {
   try {
-    // Urgent-first ordering happens here, in the database query.
-    // priority is a MySQL ENUM("Normal", "Urgent"), so "desc" sorts by the
-    // enum's declared ordinal and reliably puts every Urgent notice above
-    // every Normal one, regardless of publishDate.
+   
     const notices = await prisma.notice.findMany({
       orderBy: [{ priority: "desc" }, { publishDate: "desc" }],
     });
